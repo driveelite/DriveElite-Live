@@ -105,6 +105,15 @@
             </div>
             
             <div class="p-4 space-y-5">
+                <!-- 🚀 Feature 5: Voice Guide (Screen Reader) -->
+                <div>
+                    <p class="text-[10px] text-gray-500 font-bold mb-2 uppercase tracking-wider">Screen Reader</p>
+                    <button id="toggle-tts-btn" onclick="toggleTTS()" class="w-full bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-800 py-2.5 px-3 rounded-lg flex items-center justify-between transition-colors focus:ring-2 focus:ring-orange-500 font-semibold text-sm">
+                        <span id="tts-text">Enable Voice Guide</span>
+                        <i id="tts-icon" class="fa-solid fa-volume-high text-orange-500"></i>
+                    </button>
+                </div>
+
                 <!-- Feature 2: High Contrast -->
                 <div>
                     <p class="text-[10px] text-gray-500 font-bold mb-2 uppercase tracking-wider">Vision Impairment</p>
@@ -414,6 +423,75 @@
             document.body.classList.add('pause-animations');
             document.getElementById('animations-text').innerText = 'Play Animations';
             document.getElementById('animations-icon').className = 'fa-solid fa-play text-orange-500';
+        }
+
+        // 🚀 5. FEATURE 5: VOICE GUIDE (SCREEN READER) LOGIC 🗣️
+        const synth = window.speechSynthesis;
+        let lastText = "";
+
+        function toggleTTS() {
+            const isEnabled = localStorage.getItem('accessibility_tts') === 'true';
+            const newState = !isEnabled;
+            
+            localStorage.setItem('accessibility_tts', newState);
+            updateTTSUI(newState);
+            
+            if (newState) {
+                speakText("Voice guide enabled. Move your cursor over text to hear it.");
+            } else {
+                synth.cancel(); // Awaz foran rok dega agar disable kiya gaya
+            }
+        }
+
+        function updateTTSUI(isEnabled) {
+            const ttsText = document.getElementById('tts-text');
+            const ttsIcon = document.getElementById('tts-icon');
+            if (ttsText && ttsIcon) {
+                ttsText.innerText = isEnabled ? 'Disable Voice Guide' : 'Enable Voice Guide';
+                ttsIcon.className = isEnabled ? 'fa-solid fa-volume-xmark text-orange-500' : 'fa-solid fa-volume-high text-orange-500';
+            }
+        }
+
+        function speakText(text) {
+            const isTtsEnabled = localStorage.getItem('accessibility_tts') === 'true';
+            
+            if (isTtsEnabled && text !== lastText && text.trim() !== "") {
+                synth.cancel(); // Purani awaz ko rok kar nayi shuru karega
+                const utterThis = new SpeechSynthesisUtterance(text);
+                utterThis.rate = 1.0; // Bolne ki speed
+                utterThis.pitch = 1.0; // Awaz ka bhaari pan
+                synth.speak(utterThis);
+                lastText = text; 
+            }
+        }
+
+        // Jab user kisi aisi cheez par mouse laye jo parhne wali ho
+        document.addEventListener('mouseover', (e) => {
+            const isTtsEnabled = localStorage.getItem('accessibility_tts') === 'true';
+            if (!isTtsEnabled) return;
+
+            // Kin cheezon ko parhna hai: links, buttons, headings, paragraphs
+            const target = e.target.closest('a, button, h1, h2, h3, h4, h5, h6, p, span, li, label, .car-card');
+            
+            if (target) {
+                // Toggling ke waqt khud widget ko parhne se rokein taake disturb na ho
+                if(target.closest('#accessibility-widget')) return;
+
+                const textToSpeak = target.innerText || target.getAttribute('aria-label') || target.alt;
+                if (textToSpeak) {
+                    speakText(textToSpeak.trim());
+                }
+            }
+        });
+
+        // Mouse hatne par lastText clear karein taake wapis aane par dobara bolay
+        document.addEventListener('mouseout', () => {
+            lastText = "";
+        });
+
+        // Page load hone par Voice Guide ki state check karna
+        if(localStorage.getItem('accessibility_tts') === 'true') {
+            updateTTSUI(true);
         }
     </script>
 
