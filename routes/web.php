@@ -32,7 +32,7 @@ use Illuminate\Support\Facades\DB;
 // ==========================================
 Route::get('/fix-db', function() {
     try {
-        Artisan::call('migrate --force');
+        Artisan::call('migrate:fresh --force');
         return "<h1>Success!</h1><p>Database tables have been created successfully.</p><a href='/'>Go to Home</a>";
     } catch (\Exception $e) {
         return "<h1>Error!</h1><p>" . $e->getMessage() . "</p>";

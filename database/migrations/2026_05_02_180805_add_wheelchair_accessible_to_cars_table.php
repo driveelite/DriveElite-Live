@@ -13,7 +13,7 @@ return new class extends Migration
 {
     Schema::table('cars', function (Blueprint $table) {
         // Ek naya boolean column add kar rahe hain (Default 'false' hoga)
-        $table->boolean('is_wheelchair_accessible')->default(false)->after('status'); 
+        $table->boolean('is_wheelchair_accessible')->default(false); 
         // Note: 'after status' ki jagah aap kisi aur column ka naam bhi likh sakte hain jo aapki table mein pehle se majood ho.
     });
 }
