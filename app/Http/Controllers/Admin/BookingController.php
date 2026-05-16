@@ -30,33 +30,39 @@ class BookingController extends Controller
         
         $booking->update(['status' => $request->status]);
 
-        // 🌟 VIP Dynamic Email Logic (Updated to Live Gmail SMTP without breaking anything)
+        $emailStatusMsg = ""; // Default message
+
+        // 🌟 VIP Dynamic Email Logic (Smart Error Catcher)
         if ($oldStatus !== $request->status) {
             // Sirf tab email bhejni hai jab status Pending se Approved, Completed, ya Cancelled par aaye
             if (in_array($request->status, ['Approved', 'Completed', 'Cancelled'])) {
                 try {
-                    $userEmail = $booking->user->email ?? null;
+                    // Paka Tareeqa: Agar booking wale ki email na miley, toh admin ko bhej de
+                    $userEmail = $booking->user->email ?? 'driveelite099@gmail.com';
                     
-                    if ($userEmail) {
-                        \Illuminate\Support\Facades\Mail::html(
-                            "<h2>Drive Elite Rentals</h2>
-                             <p>Dear Customer,</p>
-                             <p>Your reservation status has been successfully updated to: <strong>" . ucfirst($request->status) . "</strong>.</p>
-                             <p>Thank you for choosing Drive Elite. Have a safe journey!</p>", 
-                            function ($message) use ($userEmail) {
-                                $message->to($userEmail)
-                                        ->subject('Booking Status Updated - Drive Elite');
-                            }
-                        );
-                    }
+                    \Illuminate\Support\Facades\Mail::html(
+                        "<h2>Drive Elite Rentals</h2>
+                         <p>Dear Customer,</p>
+                         <p>Your reservation status has been successfully updated to: <strong>" . ucfirst($request->status) . "</strong>.</p>
+                         <p>Thank you for choosing Drive Elite. Have a safe journey!</p>", 
+                        function ($message) use ($userEmail) {
+                            $message->to($userEmail)
+                                    ->subject('Booking Status Updated - Drive Elite');
+                        }
+                    );
+
+                    // Agar email chali gayi toh success message
+                    $emailStatusMsg = " & Email Sent Successfully to " . $userEmail;
+
                 } catch (\Exception $e) {
-                    // Agar email na bhi jaye toh system crash na ho aur database save ho jaye
+                    // Agar fail hua toh screen par batayega kyun fail hua, par crash nahi hoga!
+                    $emailStatusMsg = " BUT Email Failed: " . $e->getMessage();
                     \Log::error("Mail sending failed: " . $e->getMessage());
                 }
             }
         }
 
-        return back()->with('success', 'Reservation status updated & Customer Notified!');
+        return back()->with('success', 'Reservation status updated!' . $emailStatusMsg);
     }
 
     /**
