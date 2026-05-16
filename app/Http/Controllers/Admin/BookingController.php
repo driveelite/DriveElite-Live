@@ -7,7 +7,6 @@ use App\Models\Booking;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Mail; 
-use App\Mail\BookingStatusMail; // 🌟 Hamari Dynamic VIP Email Class
 
 class BookingController extends Controller
 {
@@ -31,11 +30,29 @@ class BookingController extends Controller
         
         $booking->update(['status' => $request->status]);
 
-        // 🌟 VIP Dynamic Email Logic
+        // 🌟 VIP Dynamic Email Logic (Updated to Live Gmail SMTP without breaking anything)
         if ($oldStatus !== $request->status) {
             // Sirf tab email bhejni hai jab status Pending se Approved, Completed, ya Cancelled par aaye
             if (in_array($request->status, ['Approved', 'Completed', 'Cancelled'])) {
-                Mail::to($booking->user->email)->send(new BookingStatusMail($booking));
+                try {
+                    $userEmail = $booking->user->email ?? null;
+                    
+                    if ($userEmail) {
+                        \Illuminate\Support\Facades\Mail::html(
+                            "<h2>Drive Elite Rentals</h2>
+                             <p>Dear Customer,</p>
+                             <p>Your reservation status has been successfully updated to: <strong>" . ucfirst($request->status) . "</strong>.</p>
+                             <p>Thank you for choosing Drive Elite. Have a safe journey!</p>", 
+                            function ($message) use ($userEmail) {
+                                $message->to($userEmail)
+                                        ->subject('Booking Status Updated - Drive Elite');
+                            }
+                        );
+                    }
+                } catch (\Exception $e) {
+                    // Agar email na bhi jaye toh system crash na ho aur database save ho jaye
+                    \Log::error("Mail sending failed: " . $e->getMessage());
+                }
             }
         }
 
